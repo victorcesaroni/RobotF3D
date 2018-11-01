@@ -45,6 +45,7 @@ public class Football : MonoBehaviour
         textScoreBlue.text = "A " + blueScore;
         ball.transform.localPosition = ballSpawn.transform.localPosition;
         ball.transform.position = ballSpawn.transform.position;
+        ball.GetComponent<Rigidbody>().velocity = new Vector3(0, 0, 0);
     }
 
     public void ScoreRed()
@@ -53,5 +54,6 @@ public class Football : MonoBehaviour
         textScoreRed.text = redScore + " V";
         ball.transform.localPosition = ballSpawn.transform.localPosition;
         ball.transform.position = ballSpawn.transform.position;
+        ball.GetComponent<Rigidbody>().velocity = new Vector3(0, 0, 0);
     }
 }
