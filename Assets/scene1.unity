@@ -397,6 +397,7 @@ MonoBehaviour:
   ladoDoAtaque: 0
   pertoDaBola: 0
   emDirecaoAoObjetivo: 0
+  bolaNoCentro: 0
 --- !u!54 &315157410
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -787,7 +788,7 @@ Transform:
   m_GameObject: {fileID: 643900096}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0.003, y: 3.85, z: -4.756}
-  m_LocalScale: {x: 2.4883986, y: 8.339776, z: 0.40095428}
+  m_LocalScale: {x: 0.5859298, y: 8.339776, z: 0.40095428}
   m_Children: []
   m_Father: {fileID: 2065799353}
   m_RootOrder: 1
@@ -951,6 +952,7 @@ MonoBehaviour:
   ladoDoAtaque: 0
   pertoDaBola: 0
   emDirecaoAoObjetivo: 0
+  bolaNoCentro: 0
 --- !u!54 &664650537
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1344,7 +1346,7 @@ Transform:
   m_GameObject: {fileID: 947784002}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0.002998709, y: 3.8499997, z: 4.756}
-  m_LocalScale: {x: 2.4883983, y: 8.3397665, z: 0.4009549}
+  m_LocalScale: {x: 0.58592975, y: 8.3397665, z: 0.4009549}
   m_Children: []
   m_Father: {fileID: 2065799353}
   m_RootOrder: 2
@@ -2183,6 +2185,7 @@ MonoBehaviour:
   ladoDoAtaque: 0
   pertoDaBola: 0
   emDirecaoAoObjetivo: 0
+  bolaNoCentro: 0
 --- !u!1 &1268723161
 GameObject:
   m_ObjectHideFlags: 0
@@ -2437,6 +2440,7 @@ MonoBehaviour:
   ladoDoAtaque: 0
   pertoDaBola: 0
   emDirecaoAoObjetivo: 0
+  bolaNoCentro: 0
 --- !u!54 &1385069832
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -2709,6 +2713,7 @@ MonoBehaviour:
   ladoDoAtaque: 0
   pertoDaBola: 0
   emDirecaoAoObjetivo: 0
+  bolaNoCentro: 0
 --- !u!54 &1394303941
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3392,6 +3397,7 @@ MonoBehaviour:
   ladoDoAtaque: 0
   pertoDaBola: 0
   emDirecaoAoObjetivo: 0
+  bolaNoCentro: 0
 --- !u!1 &1812531519
 GameObject:
   m_ObjectHideFlags: 0
@@ -3753,6 +3759,7 @@ MonoBehaviour:
   ladoDoAtaque: 0
   pertoDaBola: 0
   emDirecaoAoObjetivo: 0
+  bolaNoCentro: 0
 --- !u!54 &1927043828
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3876,6 +3883,7 @@ MonoBehaviour:
   ladoDoAtaque: 0
   pertoDaBola: 0
   emDirecaoAoObjetivo: 0
+  bolaNoCentro: 0
 --- !u!54 &2052461439
 Rigidbody:
   m_ObjectHideFlags: 0

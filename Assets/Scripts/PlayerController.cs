@@ -56,6 +56,8 @@ public class PlayerController : MonoBehaviour {
     public bool pertoDaBola;
     public bool emDirecaoAoObjetivo;
 
+    public bool bolaNoCentro;
+
     void ExecutaAcao(Acao acao, bool pular, Velocidade velocidade)
     {
         ultimaAcao = acao;
@@ -71,27 +73,31 @@ public class PlayerController : MonoBehaviour {
         else if (velocidade == Velocidade.RAPIDA)
             force = 6000.0f / div;
 
-        Vector3 vecForce = direcaoAteBola * force;
-
-        vecForce.y = 0;
-
-        if (pular && transform.position.y < 1.0f)
-        {
-             vecForce.y = 5000.0f;
-        }
-
+        Vector3 vecForce = new Vector3(0, 0, 0);
+        
         if (acao == Acao.APROXIMAR)
         {
-            rigidbody.AddForce(vecForce);
+            vecForce = direcaoAteBola * force;
+            vecForce.y = 0;
         }
         else if (acao == Acao.DEFENDER)
         {
-            rigidbody.AddForce(vecForce);
+            vecForce = direcaoAteDefender * force;
+            vecForce.y = 0;
         }
+
+        if (pular && transform.position.y < 1.0f)
+        {
+            vecForce.y = 5000.0f;
+        }
+
+        rigidbody.AddForce(vecForce);
     }
 
     void FixedUpdate()
     {
+        float goalsDistance = (goal.transform.position - defend.transform.position).magnitude;
+
         distanceToBall = (ball.transform.position - transform.position).magnitude;
         distanceToGoal = (goal.transform.position - transform.position).magnitude;
         distanceToDefend = (defend.transform.position - transform.position).magnitude;
@@ -103,11 +109,13 @@ public class PlayerController : MonoBehaviour {
         goalBallDot = Vector3.Dot(direcaoAteObjetivo, ball.transform.position - transform.position); 
 
         attackSide = distanceToGoal < distanceToDefend; 
-        defendSide = distanceToGoal >= distanceToDefend; 
+        defendSide = distanceToGoal >= distanceToDefend;
 
-        pertoDoObjetivo = distanceToGoal < 25;
-        ladoDoAtaque = distanceToGoal < distanceToDefend;
-        pertoDaBola = distanceToBall < 6;
+        bolaNoCentro = Mathf.Min((goal.transform.position - ball.transform.position).magnitude, (defend.transform.position - ball.transform.position).magnitude) > goalsDistance / 4;
+
+        pertoDoObjetivo = distanceToGoal <= 25;
+        ladoDoAtaque = distanceToGoal <= distanceToDefend;
+        pertoDaBola = distanceToBall <= 6;
         emDirecaoAoObjetivo = Vector3.Dot(direcaoAteObjetivo, ball.transform.position - transform.position) > 0.5f;
 
         if (aiType == AIType.RANDOM)
@@ -127,22 +135,40 @@ public class PlayerController : MonoBehaviour {
         {
             //if (Random.Range(1, 5) == 1)
             {
-                if (!pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
+                if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
                 {
                     ExecutaAcao(Acao.DEFENDER, false, Velocidade.NORMAL);
                 }
-                else if (!pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo)
+                else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo)
                 {
                     ExecutaAcao(Acao.DEFENDER, false, Velocidade.NORMAL);
                 }
-                else if (!pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo)
+                else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo)
                 {
                     ExecutaAcao(Acao.APROXIMAR, true, Velocidade.NORMAL);
                 }
-                else if (!pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo)
+                else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo)
                 {
                     ExecutaAcao(Acao.APROXIMAR, false, Velocidade.RAPIDA);
                 }
+
+                else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
+                {
+                    ExecutaAcao(Acao.DEFENDER, false, Velocidade.NORMAL);
+                }
+                else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo)
+                {
+                    ExecutaAcao(Acao.APROXIMAR, false, Velocidade.NORMAL);
+                }
+                else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo)
+                {
+                    ExecutaAcao(Acao.APROXIMAR, true, Velocidade.NORMAL);
+                }
+                else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo)
+                {
+                    ExecutaAcao(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+                }
+
                 else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
                 {
                     ExecutaAcao(Acao.APROXIMAR, false, Velocidade.NORMAL);
