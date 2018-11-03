@@ -1,11 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+
 
 public class PlayerController : MonoBehaviour {
-    public GameObject ball;
-    public GameObject defend;
-    public GameObject goal;
 
     public enum AIType
     {
@@ -27,11 +26,12 @@ public class PlayerController : MonoBehaviour {
         RAPIDA,
         NENHUMA,
     }
-
+    
     public AIType aiType;
 
     Rigidbody rigidbody;
-    
+    Blackboard blackBoard;
+
     float distanceToBall; // distancia ate a bola
     float distanceToGoal; // distancia ate o gol objetivo
     float distanceToDefend; // distancia ate o gol para defender
@@ -43,28 +43,42 @@ public class PlayerController : MonoBehaviour {
     float goalBallDot; // < 0 siginifica que o jogador esta entre a bola e o objetivo (aka que a bola esta atras do jogador)
     bool attackSide; // esta no lado do ataque
     bool defendSide; // esta no lado da defesa
+    bool bolaNoCentro; // indica se a bola esta no meio de campo
+    bool poucoJogadorDefendendo; // indica se jogadoresDefendendo < jogadoresAproximando
 
-    void Start () {
-        rigidbody = GetComponent<Rigidbody>();
-	}
+    // blackboard info
+    int jogadoresAproximando = 0;
+    int jogadoresDefendendo = 0;
 
-    public Acao ultimaAcao;
-    public bool ultimoPular;
-    public Velocidade ultimaVelocidade;
+    public bool acaoEncerrada;
+    public Acao acao = Acao.NADA;
+    public bool pular;
+    public Velocidade velocidade;
     public bool pertoDoObjetivo;
     public bool ladoDoAtaque;
     public bool pertoDaBola;
     public bool emDirecaoAoObjetivo;
 
-    public bool bolaNoCentro;
+    TextMesh debugText = null;
 
-    void ExecutaAcao(Acao acao, bool pular, Velocidade velocidade)
+    void Start()
     {
-        ultimaAcao = acao;
-        ultimoPular = pular;
-        ultimaVelocidade = velocidade;
+        acaoEncerrada = true;
+        rigidbody = GetComponent<Rigidbody>();
+        blackBoard = GetComponentInParent<Blackboard>();
+        debugText = GetComponentInChildren<TextMesh>();
+    }
 
-        float div = 5;
+    void SaveAction(Acao acao, bool pular, Velocidade velocidade)
+    {
+        this.acao = acao;
+        this.pular = pular;
+        this.velocidade = velocidade;
+    }
+
+    void ExecuteAction()
+    {
+        float div = Random.Range(3, 6);
 
         float force = 1000.0f / div;
 
@@ -74,19 +88,25 @@ public class PlayerController : MonoBehaviour {
             force = 6000.0f / div;
 
         Vector3 vecForce = new Vector3(0, 0, 0);
-        
+
         if (acao == Acao.APROXIMAR)
         {
+            //if (distanceToBall < 2)
+                acaoEncerrada = true;
+
             vecForce = direcaoAteBola * force;
-            vecForce.y = 0;
+            //vecForce.y = 0;
         }
         else if (acao == Acao.DEFENDER)
         {
+            //if (distanceToDefend < 2)
+                acaoEncerrada = true;
+
             vecForce = direcaoAteDefender * force;
-            vecForce.y = 0;
+            //vecForce.y = 0;
         }
 
-        if (pular && transform.position.y < 1.0f)
+        if (pular && transform.position.y < 1.0f && distanceToBall < 5)
         {
             vecForce.y = 5000.0f;
         }
@@ -94,21 +114,372 @@ public class PlayerController : MonoBehaviour {
         rigidbody.AddForce(vecForce);
     }
 
+    void Reevaluate()
+    {
+        acaoEncerrada = false;
+
+        if (aiType == AIType.RANDOM)
+        {
+            acaoEncerrada = true;
+
+            float force = Random.Range(1000.0f, 5000.0f);
+
+            //transform.LookAt(ball.transform);
+            //rigidbody.AddRelativeForce(0, 0, 10000.0f);
+
+            //direcaoAteBola.y = 0;
+            rigidbody.AddForce(direcaoAteBola * force);
+        }
+        else if (aiType == AIType.FUZZY)
+        {
+            if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+            }
+
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+            }
+
+            else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+            }
+        }
+        else if (aiType == AIType.FUZZY_BLACKBOARD)
+        {
+            /*if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, true, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);// *
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+            }*/
+
+            if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);// *
+            }
+            else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.DEFENDER, false, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, true, Velocidade.NORMAL);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+            }
+            else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo && !poucoJogadorDefendendo)
+            {
+                SaveAction(Acao.APROXIMAR, false, Velocidade.RAPIDA);
+            }
+        }
+    }
+
     void FixedUpdate()
     {
+        var goal = blackBoard.goal;
+        var defend = blackBoard.defend;
+        var ball = blackBoard.ball;
+
         float goalsDistance = (goal.transform.position - defend.transform.position).magnitude;
 
         distanceToBall = (ball.transform.position - transform.position).magnitude;
         distanceToGoal = (goal.transform.position - transform.position).magnitude;
         distanceToDefend = (defend.transform.position - transform.position).magnitude;
-        
-        direcaoAteBola = (ball.transform.position - transform.position).normalized; 
-        direcaoAteObjetivo = (goal.transform.position - transform.position).normalized; 
-        direcaoAteDefender = (defend.transform.position - transform.position).normalized; 
 
-        goalBallDot = Vector3.Dot(direcaoAteObjetivo, ball.transform.position - transform.position); 
+        direcaoAteBola = (ball.transform.position - transform.position).normalized;
+        direcaoAteObjetivo = (goal.transform.position - transform.position).normalized;
+        direcaoAteDefender = (defend.transform.position - transform.position).normalized;
 
-        attackSide = distanceToGoal < distanceToDefend; 
+        goalBallDot = Vector3.Dot(direcaoAteObjetivo, ball.transform.position - transform.position);
+
+        attackSide = distanceToGoal < distanceToDefend;
         defendSide = distanceToGoal >= distanceToDefend;
 
         bolaNoCentro = Mathf.Min((goal.transform.position - ball.transform.position).magnitude, (defend.transform.position - ball.transform.position).magnitude) > goalsDistance / 4;
@@ -118,90 +489,33 @@ public class PlayerController : MonoBehaviour {
         pertoDaBola = distanceToBall <= 6;
         emDirecaoAoObjetivo = Vector3.Dot(direcaoAteObjetivo, ball.transform.position - transform.position) > 0.5f;
 
-        if (aiType == AIType.RANDOM)
+        jogadoresAproximando = 0;
+        jogadoresDefendendo = 0;
+
+        foreach (var player in blackBoard.players)
         {
-            if (Random.Range(1, 5) == 1)
-            {
-                float force = Random.Range(1000.0f, 5000.0f);
+            if (player.gameObject == this.gameObject)
+                continue;
 
-                //transform.LookAt(ball.transform);
-                //rigidbody.AddRelativeForce(0, 0, 10000.0f);
-
-                direcaoAteBola.y = 0;
-                rigidbody.AddForce(direcaoAteBola * force);
-            }
+            if (player.acao == Acao.APROXIMAR)
+                jogadoresAproximando++;
+            else if (player.acao == Acao.DEFENDER)
+                jogadoresDefendendo++;
         }
-        else if (aiType == AIType.FUZZY)
+
+        poucoJogadorDefendendo = jogadoresDefendendo < jogadoresAproximando;
+
+        if (acaoEncerrada)
         {
-            //if (Random.Range(1, 5) == 1)
-            {
-                if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.DEFENDER, false, Velocidade.NORMAL);
-                }
-                else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.DEFENDER, false, Velocidade.NORMAL);
-                }
-                else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, true, Velocidade.NORMAL);
-                }
-                else if (!bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, false, Velocidade.RAPIDA);
-                }
-
-                else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.DEFENDER, false, Velocidade.NORMAL);
-                }
-                else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, false, Velocidade.NORMAL);
-                }
-                else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, true, Velocidade.NORMAL);
-                }
-                else if (bolaNoCentro && !pertoDoObjetivo && !ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, false, Velocidade.RAPIDA);
-                }
-
-                else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, false, Velocidade.NORMAL);
-                }
-                else if (!pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, false, Velocidade.NORMAL);
-                }
-                else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, true, Velocidade.NORMAL);
-                }
-                else if (!pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, false, Velocidade.NORMAL);
-                }
-                else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && !emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, false, Velocidade.NORMAL);
-                }
-                else if (pertoDoObjetivo && ladoDoAtaque && !pertoDaBola && emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, false, Velocidade.NORMAL);
-                }
-                else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && !emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, true, Velocidade.NORMAL);
-                }
-                else if (pertoDoObjetivo && ladoDoAtaque && pertoDaBola && emDirecaoAoObjetivo)
-                {
-                    ExecutaAcao(Acao.APROXIMAR, false, Velocidade.RAPIDA);
-                }
-            }
+            Reevaluate();
         }
+
+        ExecuteAction();
+    }
+
+    void Update()
+    {
+        if (debugText != null)
+            debugText.text = "";//acao.ToString().Substring(0, 4) + "\n" + pular.ToString().Substring(0, 4) + "\n" + velocidade.ToString().Substring(0, 4);
     }
 }
