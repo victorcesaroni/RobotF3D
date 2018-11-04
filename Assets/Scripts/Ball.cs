@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class Ball : MonoBehaviour {
     public List<Blackboard> blackboards;
-    
-	void Start ()
+
+    void Start ()
     {
         foreach (var blackboard in blackboards)
         {

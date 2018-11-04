@@ -23,7 +23,7 @@ public class Blackboard : MonoBehaviour
     Vector3 posicaoBola;
     Vector3 posicaoDefender;
     Vector3 posicaoObjetivo;
-
+    
     public class RequestResponse
     {
         public bool succes = false;

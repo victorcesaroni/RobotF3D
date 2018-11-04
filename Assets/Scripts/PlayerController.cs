@@ -60,7 +60,7 @@ public class PlayerController : MonoBehaviour {
     public bool emDirecaoAoObjetivo;
 
     TextMesh debugText = null;
-    
+
     void Start()
     {
         acaoEncerrada = true;
