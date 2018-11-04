@@ -426,7 +426,7 @@ GameObject:
   - component: {fileID: 160997384}
   - component: {fileID: 160997385}
   m_Layer: 0
-  m_Name: TeamRed
+  m_Name: TeamRedBlackboard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -462,16 +462,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67cf7e8a57efba74bb7147e96ff0719c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  players:
-  - {fileID: 1789241295}
-  - {fileID: 2052461438}
-  - {fileID: 315157409}
-  - {fileID: 1385069831}
-  - {fileID: 10553424}
-  - {fileID: 1329755795}
-  ball: {fileID: 1462031149}
-  defend: {fileID: 947784002}
-  goal: {fileID: 643900096}
 --- !u!1 &184453669
 GameObject:
   m_ObjectHideFlags: 0
@@ -1622,7 +1612,7 @@ GameObject:
   - component: {fileID: 683098461}
   - component: {fileID: 683098462}
   m_Layer: 0
-  m_Name: TeamBlue
+  m_Name: TeamBlueBlackboard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1658,16 +1648,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 67cf7e8a57efba74bb7147e96ff0719c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  players:
-  - {fileID: 1245248701}
-  - {fileID: 664650536}
-  - {fileID: 1927043827}
-  - {fileID: 1394303940}
-  - {fileID: 1728004018}
-  - {fileID: 1992357016}
-  ball: {fileID: 1462031149}
-  defend: {fileID: 643900096}
-  goal: {fileID: 947784002}
 --- !u!1 &701055643
 GameObject:
   m_ObjectHideFlags: 0
@@ -4336,6 +4316,7 @@ GameObject:
   - component: {fileID: 1462031152}
   - component: {fileID: 1462031151}
   - component: {fileID: 1462031150}
+  - component: {fileID: 1462031155}
   m_Layer: 0
   m_Name: Ball
   m_TagString: Ball
@@ -4425,6 +4406,20 @@ Transform:
   m_Father: {fileID: 1894674883}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1462031155
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 0}
+  m_GameObject: {fileID: 1462031149}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40cc6ffb080d3e748a1541e341eb5dc8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  blackboards:
+  - {fileID: 683098462}
+  - {fileID: 160997385}
 --- !u!1 &1488179567
 GameObject:
   m_ObjectHideFlags: 0
@@ -6723,6 +6718,8 @@ MonoBehaviour:
   ballSpawn: {fileID: 1894674882}
   textScoreBlue: {fileID: 957316076}
   textScoreRed: {fileID: 1012654263}
+  blueBlackboard: {fileID: 683098462}
+  redBlackboard: {fileID: 160997385}
   blueScore: 0
   redScore: 0
 --- !u!1 &2082347566

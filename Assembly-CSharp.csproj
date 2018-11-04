@@ -51,6 +51,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\Scripts\Ball.cs" />
      <Compile Include="Assets\Scripts\Blackboard.cs" />
      <Compile Include="Assets\Scripts\FixRotation.cs" />
      <Compile Include="Assets\Scripts\Football.cs" />

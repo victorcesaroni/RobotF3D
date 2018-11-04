@@ -11,6 +11,8 @@ public class Football : MonoBehaviour
     public GameObject ballSpawn;
     public Text textScoreBlue;
     public Text textScoreRed;
+    public Blackboard blueBlackboard;
+    public Blackboard redBlackboard;
 
     public int blueScore;
     public int redScore;
@@ -20,6 +22,11 @@ public class Football : MonoBehaviour
     {
         blueScore = 0;
         redScore = 0;
+
+        blueBlackboard.RequestUpdate(gameObject, Blackboard.BlackBoardData.POSICAO_DEFENDER, new Blackboard.UpdateRequest<Vector3>(blueGoal.transform.position));
+        blueBlackboard.RequestUpdate(gameObject, Blackboard.BlackBoardData.POSICAO_OBJETIVO, new Blackboard.UpdateRequest<Vector3>(redGoal.transform.position));
+        redBlackboard.RequestUpdate(gameObject, Blackboard.BlackBoardData.POSICAO_DEFENDER, new Blackboard.UpdateRequest<Vector3>(redGoal.transform.position));
+        redBlackboard.RequestUpdate(gameObject, Blackboard.BlackBoardData.POSICAO_OBJETIVO, new Blackboard.UpdateRequest<Vector3>(blueGoal.transform.position));
     }
 	
 	// Update is called once per frame
